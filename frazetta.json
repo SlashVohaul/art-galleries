@@ -1,0 +1,45 @@
+[
+  {
+    "id": 1,
+    "title": "Death Dealer VI",
+    "desc": "1990.",
+    "tags": ["Heroes Chronicles"],
+    "img": "https://lh3.googleusercontent.com/d/1TVgGVyviT_Gf8R-Zdxzrd8TY1iMZcnFl",
+    "comparisons": [
+      {
+        "label": "Conquest of the Underworld loading screen (snake)",
+        "img": "https://lh3.googleusercontent.com/d/1TEylG2HrmyYeicXKg8MHP-Jz-Tyq-Bc7"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Furious",
+    "desc": "Date unknown.",
+    "tags": ["Heroes 3: RoE", "Heroes 4"],
+    "img": "https://lh3.googleusercontent.com/d/1UjlFaKmSp-0GmIr8PC6GaVLoBEvi_nFo",
+    "comparisons": [
+      {
+        "label": "Restoration of Erathia",
+        "img": "https://lh3.googleusercontent.com/d/11t-2Aer-pJCmL-zuglVP1Zpjtn4yQO-g"
+      },
+      {
+        "label": "Heroes 4 puzzle map",
+        "img": "https://lh3.googleusercontent.com/d/1pk8k3TJqwV37s5Z3iLkHhkI-azuxB9y2"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Mongol Scout",
+    "desc": "1971.",
+    "tags": ["Heroes Chronicles"],
+    "img": "https://lh3.googleusercontent.com/d/1JrhMmYODnWvG1XPmwuKuNtiEyY1dUdvd",
+    "comparisons": [
+      {
+        "label": "Sword of Frost title menu",
+        "img": "https://lh3.googleusercontent.com/d/1v_TVFnapbH8KnzkQfFNIhVjZE3lf_eF8"
+      }
+    ]
+  }
+]

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Gallery & Comparison Slider</title>
+<style>
+  body { font-family: sans-serif; margin: 0; padding: 16px; color: #333; background: #fafafa; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  button { padding: 6px 12px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 14px; }
+  button:hover { background: #f1f3f4; }
+  button.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fff; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .card img { width: 100%; height: 160px; object-fit: cover; display: block; background: #eee; }
+  .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+  .card-title { font-weight: bold; margin-bottom: 4px; }
+  .card-desc { font-size: 13px; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 8px; }
+  .tag { font-size: 11px; background: #f1f3f4; color: #444; padding: 2px 6px; border-radius: 4px; }
+
+  #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99; padding: 24px; align-items: flex-start; justify-content: center; overflow-y: auto; }
+  .modal-content { background: #fff; max-width: 1000px; width: 100%; border-radius: 8px; overflow: hidden; display: flex; flex-direction: row; position: relative; max-height: 90vh; }
+  .close-btn { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 10; cursor: pointer; }
+  .close-btn:hover { background: #000; }
+  .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 38px; height: 38px; padding: 0; display: none; align-items: center; justify-content: center; z-index: 10; cursor: pointer; opacity: 0; transition: opacity 0.2s, background 0.15s; }
+  .nav-btn:hover { background: #000; }
+  .modal-media:hover .nav-btn { opacity: 1; }
+  #prevBtn { left: 12px; }
+  #nextBtn { right: 12px; }
+
+  .modal-media { flex: 2; background: #111; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; min-height: 400px; user-select: none; }
+  .compare-wrapper { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .compare-wrapper img { max-width: 100%; max-height: 80vh; display: block; object-fit: contain; }
+  
+  #compareOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; clip-path: inset(0 50% 0 0); display: none; align-items: center; justify-content: center; }
+  #sliderHandle { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #fff; cursor: ew-resize; display: none; box-shadow: 0 0 6px rgba(0,0,0,0.8); z-index: 5; }
+  #sliderHandle::after { content: '◀ ▶'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a73e8; color: #fff; font-size: 11px; padding: 6px 8px; border-radius: 20px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+
+  .modal-details { flex: 1; padding: 24px; display: flex; flex-direction: column; overflow-y: auto; border-left: 1px solid #eee; min-width: 280px; }
+  .modal-details h2 { margin: 0 0 12px 0; font-size: 20px; padding-right: 24px; }
+  .modal-details p { font-size: 14px; line-height: 1.5; color: #444; margin: 0 0 16px 0; }
+  .compare-controls { margin-top: auto; padding-top: 16px; border-top: 1px solid #eee; }
+  .compare-controls-title { display: block; font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #555; }
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-option { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #333; cursor: pointer; line-height: 1.4; }
+  .radio-option input[type="radio"] { margin-top: 2px; accent-color: #1a73e8; cursor: pointer; }
+  .status-msg { color: #666; font-size: 14px; padding: 12px 0; }
+
+  @media (max-width: 768px) {
+    .modal-content { flex-direction: column; overflow-y: auto; }
+    .modal-media { min-height: 280px; }
+    .modal-details { border-left: none; border-top: 1px solid #eee; }
+  }
+</style>
+</head>
+<body>
+
+<div class="controls" id="filters">
+  <button class="active" onclick="filterTag('All', this)">All</button>
+</div>
+
+<div class="grid" id="gallery">
+  <div class="status-msg">Loading gallery...</div>
+</div>
+
+<div id="modal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closeModal()" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="1" y1="1" x2="13" y2="13"></line>
+        <line x1="13" y1="1" x2="1" y2="13"></line>
+      </svg>
+    </button>
+    <div class="modal-media" id="mediaContainer">
+      <button class="nav-btn" id="prevBtn" onclick="navigateGallery(-1)" aria-label="Previous image">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="10 3 5 8 10 13"></polyline>
+        </svg>
+      </button>
+      <button class="nav-btn" id="nextBtn" onclick="navigateGallery(1)" aria-label="Next image">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 3 11 8 6 13"></polyline>
+        </svg>
+      </button>
+      <div class="compare-wrapper">
+        <img id="baseImg" src="" alt="Expanded view">
+        <div id="compareOverlay">
+          <img id="compareImg" src="" alt="Comparison view">
+        </div>
+        <div id="sliderHandle"></div>
+      </div>
+    </div>
+    <div class="modal-details">
+      <h2 id="modalTitle"></h2>
+      <p id="modalDesc"></p>
+      <div class="tags" id="modalTags" style="margin-top: 0; margin-bottom: 20px;"></div>
+      <div class="compare-controls" id="compareControls">
+        <span class="compare-controls-title">Compare with Might & Magic art:</span>
+        <div class="radio-group" id="compareOptions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let items = [];
+  let activeItem = null;
+  let currentItems = [];
+  let isDragging = false;
+
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    const dataFile = params.get('data') || 'gallery1.json';
+
+    try {
+      const response = await fetch(dataFile);
+      if (!response.ok) throw new Error(`Could not load ${dataFile}`);
+      items = await response.json();
+
+      const filterContainer = document.getElementById('filters');
+      const allTags = new Set(items.flatMap(item => item.tags || []));
+      allTags.forEach(tag => {
+        const btn = document.createElement('button');
+        btn.textContent = tag;
+        btn.onclick = () => filterTag(tag, btn);
+        filterContainer.appendChild(btn);
+      });
+
+      renderGallery(items);
+    } catch (error) {
+      document.getElementById('gallery').innerHTML = 
+        `<div class="status-msg">Error loading gallery data (${dataFile}). Make sure the JSON file is in the same folder and formatted properly.</div>`;
+    }
+  }
+
+  function renderGallery(data) {
+    currentItems = data;
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = data.map(item => `
+      <div class="card" onclick="openModal(${item.id}, event)">
+        <img src="${item.img}" alt="${item.title}">
+        <div class="card-body">
+          <div class="card-title">${item.title}</div>
+          <div class="card-desc">${item.desc}</div>
+          <div class="tags">${(item.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterTag(tag, btn) {
+    document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = tag === 'All' ? items : items.filter(i => (i.tags || []).includes(tag));
+    renderGallery(filtered);
+  }
+
+  function openModal(id, event) {
+    activeItem = items.find(i => i.id === id);
+    if (!activeItem) return;
+
+    document.getElementById('baseImg').src = activeItem.img;
+    document.getElementById('modalTitle').textContent = activeItem.title;
+    document.getElementById('modalDesc').textContent = activeItem.desc;
+    document.getElementById('modalTags').innerHTML = (activeItem.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+    const controls = document.getElementById('compareControls');
+    const optionsContainer = document.getElementById('compareOptions');
+    const comps = activeItem.comparisons || [];
+
+    if (comps.length === 0) {
+      controls.style.display = 'none';
+      optionsContainer.innerHTML = '';
+    } else {
+      controls.style.display = 'block';
+      const noneOption = `
+        <label class="radio-option">
+          <input type="radio" name="compareChoice" value="" checked onchange="updateComparison(this.value)">
+          <span>No comparison</span>
+        </label>
+      `;
+      const compOptions = comps.map((c, idx) => `
+        <label class="radio-option">
+          <input type="radio" name="compareChoice" value="${idx}" onchange="updateComparison(this.value)">
+          <span>${c.label}</span>
+        </label>
+      `).join('');
+      optionsContainer.innerHTML = noneOption + compOptions;
+    }
+    
+    updateComparison("");
+
+    const currentIndex = currentItems.findIndex(i => i.id === id);
+    document.getElementById('prevBtn').style.display = currentIndex > 0 ? 'flex' : 'none';
+    document.getElementById('nextBtn').style.display = (currentIndex !== -1 && currentIndex < currentItems.length - 1) ? 'flex' : 'none';
+
+    const filters = document.getElementById('filters');
+    const filtersTop = filters.getBoundingClientRect().top;
+
+    if (filtersTop > 0) {
+      filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const modal = document.getElementById('modal');
+    modal.style.display = 'flex';
+
+    const modalBox = modal.querySelector('.modal-content');
+    const boxHeight = modalBox.offsetHeight || 500;
+    const viewHeight = window.innerHeight;
+
+    if (filtersTop > 0) {
+      const centeredTop = Math.max(24, (viewHeight - boxHeight) / 2);
+      modal.style.paddingTop = centeredTop + 'px';
+    } else if (event && event.currentTarget) {
+      const cardRect = event.currentTarget.getBoundingClientRect();
+      const cardCenter = cardRect.top + (cardRect.height / 2);
+      const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
+      const targetTop = Math.min(Math.max(24, cardCenter - (boxHeight / 2)), maxTop);
+      modal.style.paddingTop = targetTop + 'px';
+    } else {
+      modal.style.paddingTop = '24px';
+    }
+  }
+
+  function navigateGallery(direction) {
+    if (!activeItem) return;
+    const currentIndex = currentItems.findIndex(i => i.id === activeItem.id);
+    const nextItem = currentItems[currentIndex + direction];
+    if (nextItem) {
+      openModal(nextItem.id);
+    }
+  }
+
+  function closeModal(e) {
+    if (!e || e.target.id === 'modal') {
+      document.getElementById('modal').style.display = 'none';
+    }
+  }
+
+  function updateComparison(compIndex) {
+    const overlay = document.getElementById('compareOverlay');
+    const handle = document.getElementById('sliderHandle');
+    const compareImg = document.getElementById('compareImg');
+
+    if (compIndex === "" || !activeItem || !activeItem.comparisons[compIndex]) {
+      overlay.style.display = 'none';
+      handle.style.display = 'none';
+      return;
+    }
+
+    compareImg.src = activeItem.comparisons[compIndex].img;
+    overlay.style.display = 'flex';
+    handle.style.display = 'block';
+    setSliderPosition(50);
+  }
+
+  function setSliderPosition(percentage) {
+    const clamped = Math.max(0, Math.min(100, percentage));
+    document.getElementById('sliderHandle').style.left = clamped + '%';
+    document.getElementById('compareOverlay').style.clipPath = `inset(0 ${100 - clamped}% 0 0)`;
+  }
+
+  const mediaContainer = document.getElementById('mediaContainer');
+  const sliderHandle = document.getElementById('sliderHandle');
+
+  function handleMove(clientX) {
+    if (!isDragging) return;
+    const rect = mediaContainer.getBoundingClientRect();
+    const x = clientX - rect.left;
+    setSliderPosition((x / rect.width) * 100);
+  }
+
+  sliderHandle.addEventListener('mousedown', () => isDragging = true);
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('mousemove', (e) => handleMove(e.clientX));
+  sliderHandle.addEventListener('touchstart', () => isDragging = true, { passive: true });
+  window.addEventListener('touchend', () => isDragging = false);
+  window.addEventListener('touchmove', (e) => {
+    if (e.touches && e.touches.length > 0) handleMove(e.touches.clientX);
+  }, { passive: true });
+
+  window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modal');
+    if (modal.style.display !== 'flex') return;
+
+    if (e.key === 'Escape') {
+      closeModal();
+    } else if (e.key === 'ArrowLeft') {
+      navigateGallery(-1);
+    } else if (e.key === 'ArrowRight') {
+      navigateGallery(1);
+    } else if (e.key >= '1' && e.key <= '9') {
+      const radios = document.querySelectorAll('#compareOptions input[type="radio"]');
+      const index = parseInt(e.key, 10) - 1;
+      if (radios[index]) {
+        radios[index].checked = true;
+        updateComparison(radios[index].value);
+      }
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>
