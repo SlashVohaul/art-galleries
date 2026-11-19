@@ -342,12 +342,14 @@
 </head>
 <body>
 
-    <div class="controls" id="filters">
-        <button class="active" onclick="filterTag('All', this)">All</button>
-    </div>
+    <div id="galleryWrapper">
+        <div class="controls" id="filters">
+            <button class="active" onclick="filterTag('All', this)"> All</button>
+        </div>
 
-    <div class="grid" id="gallery">
-        <div class="status-msg">Loading gallery...</div>
+        <div class="grid" id="gallery">
+            <div class="status-msg"> Loading gallery...</div>
+        </div>
     </div>
 
     <div id="modal" onclick="closeModal(event)">
@@ -426,15 +428,15 @@
             currentItems = data;
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = data.map(item => `
-          <div class="card" onclick="openModal(${item.id}, event)">
-            <img src="${item.img}" alt="${item.title}">
-            <div class="card-body">
-              <div class="card-title">${item.title}</div>
-              <div class="card-desc">${item.desc}</div>
-              <div class="tags">${(item.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
-            </div>
-          </div>
-        `).join('');
+              <div class="card" onclick="openModal(${item.id}, event)">
+                <img src="${item.img}" alt="${item.title}">
+                <div class="card-body">
+                  <div class="card-title">${item.title}</div>
+                  <div class="card-desc">${item.desc}</div>
+                  <div class="tags">${(item.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                </div>
+              </div>
+            `).join('');
         }
 
         function filterTag(tag, btn) {
@@ -463,17 +465,17 @@
             } else {
                 controls.style.display = 'block';
                 const noneOption = `
-            <label class="radio-option">
-              <input type="radio" name="compareChoice" value="" checked onchange="updateComparison(this.value)">
-              <span>No comparison</span>
-            </label>
-          `;
+                    <label class="radio-option">
+                        <input type="radio" name="compareChoice" value="" checked onchange="updateComparison(this.value)">
+                        <span>No comparison</span>
+                    </label>
+                `;
                 const compOptions = comps.map((c, idx) => `
-            <label class="radio-option">
-              <input type="radio" name="compareChoice" value="${idx}" onchange="updateComparison(this.value)">
-              <span>${c.label}</span>
-            </label>
-          `).join('');
+                    <label class="radio-option">
+                        <input type="radio" name="compareChoice" value="${idx}" onchange="updateComparison(this.value)">
+                        <span>${c.label}</span>
+                    </label>
+                `).join('');
                 optionsContainer.innerHTML = noneOption + compOptions;
             }
 
@@ -485,41 +487,50 @@
 
             const filters = document.getElementById('filters');
             const modal = document.getElementById('modal');
+            const wrapper = document.getElementById('galleryWrapper');
+
+            // Show modal invisibly first so we can measure its exact height
+            modal.style.visibility = 'hidden';
             modal.style.display = 'flex';
 
             const modalBox = modal.querySelector('.modal-content');
             const boxHeight = modalBox.offsetHeight || 500;
+            const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
 
-            let realViewportHeight = window.innerHeight;
-            let filtersScreenTop = filters.getBoundingClientRect().top;
-            let iframeOffsetTop = 0;
+            // If navigating via Prev/Next arrows (no click event), keep currentModalTop unchanged
+            if (!event) {
+                modal.style.paddingTop = currentModalTop + 'px';
+                modal.style.visibility = 'visible';
+                return;
+            }
 
-            try {
-                if (window.frameElement) {
-                    const frameRect = window.frameElement.getBoundingClientRect();
-                    realViewportHeight = window.parent.innerHeight;
-                    filtersScreenTop = frameRect.top + filters.getBoundingClientRect().top;
-                    iframeOffsetTop = frameRect.top;
+            // Take an instant, one-shot measurement of the user's exact visible screen slice
+            const snapshotObserver = new IntersectionObserver((entries) => {
+                snapshotObserver.disconnect();
+                const entry = entries[0];
+                if (!entry) return;
+
+                const visibleTop = entry.intersectionRect.top;
+                const visibleHeight = entry.intersectionRect.height;
+                const isTopCutOff = entry.boundingClientRect.top < visibleTop - 5;
+
+                // 1. Viewport is too high up (top of gallery is visible, but pushed down on screen)
+                if (!isTopCutOff && visibleHeight < boxHeight + 48) {
+                    filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // After scrolling filters to the top of the screen, center inside the screen height
+                    const screenHeight = Math.max(visibleHeight, boxHeight + 48);
+                    currentModalTop = Math.min(Math.max(24, (screenHeight - boxHeight) / 2), maxTop);
+                } else {
+                    // 2. Viewport is already inside the gallery container: center in current visible screen
+                    const viewportCenter = visibleTop + (visibleHeight / 2);
+                    currentModalTop = Math.min(Math.max(24, viewportCenter - (boxHeight / 2)), maxTop);
                 }
-            } catch (e) {
-                realViewportHeight = Math.min(window.innerHeight, window.screen.availHeight || 800);
-            }
 
-            const needsScroll = filtersScreenTop > 0;
-            if (needsScroll) {
-                filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+                modal.style.paddingTop = currentModalTop + 'px';
+                modal.style.visibility = 'visible';
+            });
 
-            if (needsScroll) {
-                currentModalTop = Math.max(24, (realViewportHeight - boxHeight) / 2);
-            } else if (event && event.currentTarget) {
-                const visibleTopInsideIframe = Math.max(0, -iframeOffsetTop);
-                const viewportCenterInsideIframe = visibleTopInsideIframe + (realViewportHeight / 2);
-                const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
-                currentModalTop = Math.min(Math.max(24, viewportCenterInsideIframe - (boxHeight / 2)), maxTop);
-            }
-
-            modal.style.paddingTop = currentModalTop + 'px';
+            snapshotObserver.observe(wrapper);
         }
 
         function navigateGallery(direction) {
@@ -576,7 +587,7 @@
         sliderHandle.addEventListener('touchstart', () => isDragging = true, { passive: true });
         window.addEventListener('touchend', () => isDragging = false);
         window.addEventListener('touchmove', (e) => {
-            if (e.touches && e.touches.length > 0) handleMove(e.touches.clientX);
+            if (e.touches && e.touches.length > 0) handleMove(e.touches[0].clientX);
         }, { passive: true });
 
         window.addEventListener('keydown', (e) => {
