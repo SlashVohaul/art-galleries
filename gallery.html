@@ -504,7 +504,8 @@
                 return;
             }
 
-            // Take an instant, one-shot measurement of the user's exact visible screen slice
+            const clickedCard = event.currentTarget;
+
             const snapshotObserver = new IntersectionObserver((entries) => {
                 snapshotObserver.disconnect();
                 const entry = entries[0];
@@ -514,23 +515,23 @@
                 const visibleHeight = entry.intersectionRect.height;
                 const isTopCutOff = entry.boundingClientRect.top < visibleTop - 5;
 
-                // 1. Viewport is too high up (top of gallery is visible, but pushed down on screen)
                 if (!isTopCutOff && visibleHeight < boxHeight + 48) {
                     filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    // After scrolling filters to the top of the screen, center inside the screen height
                     const screenHeight = Math.max(visibleHeight, boxHeight + 48);
                     currentModalTop = Math.min(Math.max(24, (screenHeight - boxHeight) / 2), maxTop);
-                } else {
-                    // 2. Viewport is already inside the gallery container: center in current visible screen
-                    const viewportCenter = visibleTop + (visibleHeight / 2);
-                    currentModalTop = Math.min(Math.max(24, viewportCenter - (boxHeight / 2)), maxTop);
+                } else if (clickedCard) {
+                    const cardRect = clickedCard.getBoundingClientRect();
+                    const cardCenter = cardRect.top + (cardRect.height / 2);
+                    currentModalTop = Math.min(Math.max(24, cardCenter - (boxHeight / 2)), maxTop);
                 }
+
 
                 modal.style.paddingTop = currentModalTop + 'px';
                 modal.style.visibility = 'visible';
             });
 
             snapshotObserver.observe(wrapper);
+
         }
 
         function navigateGallery(direction) {
