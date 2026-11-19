@@ -485,53 +485,34 @@
             document.getElementById('prevBtn').style.display = currentIndex > 0 ? 'flex' : 'none';
             document.getElementById('nextBtn').style.display = (currentIndex !== -1 && currentIndex < currentItems.length - 1) ? 'flex' : 'none';
 
-            const filters = document.getElementById('filters');
             const modal = document.getElementById('modal');
-            const wrapper = document.getElementById('galleryWrapper');
+            const modalBox = modal.querySelector('.modal-content');
 
-            // Show modal invisibly first so we can measure its exact height
             modal.style.visibility = 'hidden';
             modal.style.display = 'flex';
 
-            const modalBox = modal.querySelector('.modal-content');
-            const boxHeight = modalBox.offsetHeight || 500;
-            const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
-
-            // If navigating via Prev/Next arrows (no click event), keep currentModalTop unchanged
             if (!event) {
                 modal.style.paddingTop = currentModalTop + 'px';
                 modal.style.visibility = 'visible';
                 return;
             }
 
+            const boxHeight = modalBox.offsetHeight || 500;
+            const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
+
             const clickedCard = event.currentTarget;
+            if (clickedCard) {
+                const cardRect = clickedCard.getBoundingClientRect();
+                const cardCenter = cardRect.top + (cardRect.height / 2);
+                currentModalTop = Math.min(Math.max(24, cardCenter - (boxHeight / 2)), maxTop);
+            }
 
-            const snapshotObserver = new IntersectionObserver((entries) => {
-                snapshotObserver.disconnect();
-                const entry = entries[0];
-                if (!entry) return;
+            modal.style.paddingTop = currentModalTop + 'px';
+            modal.style.visibility = 'visible';
 
-                const visibleTop = entry.intersectionRect.top;
-                const visibleHeight = entry.intersectionRect.height;
-                const isTopCutOff = entry.boundingClientRect.top < visibleTop - 5;
-
-                if (!isTopCutOff && visibleHeight < boxHeight + 48) {
-                    filters.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    const screenHeight = Math.max(visibleHeight, boxHeight + 48);
-                    currentModalTop = Math.min(Math.max(24, (screenHeight - boxHeight) / 2), maxTop);
-                } else if (clickedCard) {
-                    const cardRect = clickedCard.getBoundingClientRect();
-                    const cardCenter = cardRect.top + (cardRect.height / 2);
-                    currentModalTop = Math.min(Math.max(24, cardCenter - (boxHeight / 2)), maxTop);
-                }
-
-
-                modal.style.paddingTop = currentModalTop + 'px';
-                modal.style.visibility = 'visible';
+            requestAnimationFrame(() => {
+                modalBox.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
             });
-
-            snapshotObserver.observe(wrapper);
-
         }
 
         function navigateGallery(direction) {
