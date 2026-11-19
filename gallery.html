@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Gallery & Comparison Slider</title>
     <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: auto;
+        }
+
         body {
             font-family: sans-serif;
-            margin: 0;
             padding: 16px;
             color: #333;
             background: #fafafa;
@@ -424,23 +429,6 @@
             }
         }
 
-        function updateContainerHeight() {
-            const wrapper = document.getElementById('galleryWrapper');
-            const controls = document.getElementById('filters');
-            const firstCard = document.querySelector('#gallery .card');
-
-            const cardHeight = firstCard ? firstCard.offsetHeight : 255;
-            const rowGap = 16;
-            const minRows = 4;
-
-            // 4 rows of cards + 3 gaps between them + filter bar height + body/controls padding
-            const minGridHeight = (minRows * cardHeight) + ((minRows - 1) * rowGap);
-            const controlsHeight = controls ? controls.offsetHeight + 16 : 50;
-            const bodyPadding = 32; // 16px top + 16px bottom
-
-            wrapper.style.minHeight = (minGridHeight + controlsHeight + bodyPadding) + 'px';
-        }
-
         function renderGallery(data) {
             currentItems = data;
             const gallery = document.getElementById('gallery');
@@ -454,12 +442,7 @@
                 </div>
               </div>
             `).join('');
-
-            requestAnimationFrame(updateContainerHeight);
         }
-
-        window.addEventListener('resize', updateContainerHeight);
-
 
         function filterTag(tag, btn) {
             document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
