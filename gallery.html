@@ -424,6 +424,23 @@
             }
         }
 
+        function updateContainerHeight() {
+            const wrapper = document.getElementById('galleryWrapper');
+            const controls = document.getElementById('filters');
+            const firstCard = document.querySelector('#gallery .card');
+
+            const cardHeight = firstCard ? firstCard.offsetHeight : 255;
+            const rowGap = 16;
+            const minRows = 4;
+
+            // 4 rows of cards + 3 gaps between them + filter bar height + body/controls padding
+            const minGridHeight = (minRows * cardHeight) + ((minRows - 1) * rowGap);
+            const controlsHeight = controls ? controls.offsetHeight + 16 : 50;
+            const bodyPadding = 32; // 16px top + 16px bottom
+
+            wrapper.style.minHeight = (minGridHeight + controlsHeight + bodyPadding) + 'px';
+        }
+
         function renderGallery(data) {
             currentItems = data;
             const gallery = document.getElementById('gallery');
@@ -437,7 +454,12 @@
                 </div>
               </div>
             `).join('');
+
+            requestAnimationFrame(updateContainerHeight);
         }
+
+        window.addEventListener('resize', updateContainerHeight);
+
 
         function filterTag(tag, btn) {
             document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
@@ -491,20 +513,45 @@
             modal.style.visibility = 'hidden';
             modal.style.display = 'flex';
 
+            const boxHeight = modalBox.offsetHeight || 500;
+            const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
+
             if (!event) {
+                const targetCenter = window.currentModalCenter || (currentModalTop + boxHeight / 2);
+                currentModalTop = Math.min(Math.max(24, targetCenter - (boxHeight / 2)), maxTop);
                 modal.style.paddingTop = currentModalTop + 'px';
                 modal.style.visibility = 'visible';
                 return;
             }
 
-            const boxHeight = modalBox.offsetHeight || 500;
-            const maxTop = Math.max(24, document.documentElement.scrollHeight - boxHeight - 24);
-
             const clickedCard = event.currentTarget;
             if (clickedCard) {
-                const cardRect = clickedCard.getBoundingClientRect();
-                const cardCenter = cardRect.top + (cardRect.height / 2);
-                currentModalTop = Math.min(Math.max(24, cardCenter - (boxHeight / 2)), maxTop);
+                const cards = Array.from(document.querySelectorAll('#gallery .card'));
+                const rows = [];
+                cards.forEach(card => {
+                    const lastRow = rows[rows.length - 1];
+                    if (!lastRow || Math.abs(card.offsetTop - lastRow[0].offsetTop) > 10) {
+                        rows.push([card]);
+                    } else {
+                        lastRow.push(card);
+                    }
+                });
+
+                let rowIndex = rows.findIndex(row => row.includes(clickedCard));
+
+                if (rows.length >= 3) {
+                    if (rowIndex === 0) rowIndex = 1;
+                    else if (rowIndex === rows.length - 1) rowIndex = rows.length - 2;
+                } else if (rows.length === 2 && rowIndex === 0) {
+                    rowIndex = 1;
+                }
+
+                const referenceCard = (rows[rowIndex] && rows[rowIndex][0]) || clickedCard;
+                const refRect = referenceCard.getBoundingClientRect();
+                const targetCenter = refRect.top + (refRect.height / 2);
+
+                window.currentModalCenter = targetCenter;
+                currentModalTop = Math.min(Math.max(24, targetCenter - (boxHeight / 2)), maxTop);
             }
 
             modal.style.paddingTop = currentModalTop + 'px';
