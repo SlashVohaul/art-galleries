@@ -1,0 +1,7 @@
+web.config
+Web.config
+.vs/
+*.sln
+*.suo
+/test-embed.html
+/embed_url.txt
