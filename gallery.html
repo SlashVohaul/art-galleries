@@ -412,6 +412,10 @@
                 const response = await fetch(`${dataFile}${separator}v=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Could not load ${dataFile}`);
                 items = await response.json();
+                items = items.map((item, idx) => ({
+                    ...item,
+                    id: item.id ?? idx
+                }));
 
                 const filterContainer = document.getElementById('filters');
                 const allTags = new Set(items.flatMap(item => item.tags || []));
