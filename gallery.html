@@ -118,11 +118,11 @@
             inset: 0;
             background: rgba(0,0,0,0.85);
             z-index: 99;
-            padding: 24px;
+            padding: 24px 72px;
             align-items: flex-start;
             justify-content: center;
-            overflow-y: auto;
-            overscroll-behavior: contain;
+            overflow: hidden;
+            touch-action: none;
         }
 
         .modal-content {
@@ -135,6 +135,7 @@
             flex-direction: row;
             position: relative;
             max-height: 90vh;
+            touch-action: pan-y;
         }
 
         .close-btn {
