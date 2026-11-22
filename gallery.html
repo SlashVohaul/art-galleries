@@ -122,6 +122,7 @@
             align-items: flex-start;
             justify-content: center;
             overflow-y: auto;
+            overscroll-behavior: contain;
         }
 
         .modal-content {
@@ -329,6 +330,7 @@
             .modal-content {
                 flex-direction: column;
                 overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .modal-media {
@@ -501,6 +503,7 @@
 
             modal.style.visibility = 'hidden';
             modal.style.display = 'flex';
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.overflow = 'hidden';
 
 
@@ -565,6 +568,7 @@
         function closeModal(e) {
             if (!e || e.target.id === 'modal') {
                 document.getElementById('modal').style.display = 'none';
+                document.documentElement.style.overflow = '';
                 document.body.style.overflow = '';
             }
         }
