@@ -130,7 +130,7 @@
             max-width: 1000px;
             width: 100%;
             border-radius: 8px;
-            overflow: hidden;
+            overflow: visible;
             display: flex;
             flex-direction: row;
             position: relative;
@@ -160,7 +160,7 @@
         }
 
         .nav-btn {
-            position: fixed;
+            position: absolute;
             top: 50%;
             transform: translateY(-50%);
             background: rgba(255, 255, 255, 0.2);
@@ -179,17 +179,17 @@
             transition: opacity 0.2s, background 0.15s;
         }
 
-            .nav-btn:hover {
-                background: rgba(255, 255, 255, 0.35);
-                opacity: 1;
-            }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            opacity: 1;
+        }
 
         #prevBtn {
-            left: 20px;
+            left: -56px;
         }
 
         #nextBtn {
-            right: 20px;
+            right: -56px;
         }
 
         .modal-media {
@@ -202,6 +202,7 @@
             overflow: hidden;
             min-height: 400px;
             user-select: none;
+            border-radius: 8px 0 0 8px;
         }
 
         .compare-wrapper {
@@ -269,6 +270,7 @@
             overflow-y: auto;
             border-left: 1px solid #eee;
             min-width: 280px;
+            border-radius: 0 8px 8px 0;
         }
 
         .modal-details h2 {
@@ -361,18 +363,18 @@
     </div>
 
     <div id="modal" onclick="closeModal(event)">
-        <button class="nav-btn" id="prevBtn" onclick="event.stopPropagation(); navigateGallery(-1)" aria-label="Previous image">
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="10 3 5 8 10 13"></polyline>
-            </svg>
-        </button>
-        <button class="nav-btn" id="nextBtn" onclick="event.stopPropagation(); navigateGallery(1)" aria-label="Next image">
-            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 3 11 8 6 13"></polyline>
-            </svg>
-        </button>
-
         <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="nav-btn" id="prevBtn" onclick="event.stopPropagation(); navigateGallery(-1)" aria-label="Previous image">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="10 3 5 8 10 13"></polyline>
+                </svg>
+            </button>
+            <button class="nav-btn" id="nextBtn" onclick="event.stopPropagation(); navigateGallery(1)" aria-label="Next image">
+                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 3 11 8 6 13"></polyline>
+                </svg>
+            </button>
+
             <button class="close-btn" onclick="closeModal()" aria-label="Close">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <line x1="1" y1="1" x2="13" y2="13"></line>
